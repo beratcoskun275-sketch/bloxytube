@@ -1374,21 +1374,86 @@
             </div>
           </div>
 
-          <!-- Netlify Canlı Yayınlama Rehberi -->
+          <!-- Netlify & GitHub Tek Tıkla Dağıtım ve Repo Oluşturma -->
           <div class="settings-card" style="margin-top:16px; border:1px solid rgba(0, 212, 255, 0.3); background:rgba(0, 212, 255, 0.04);">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:22px;">🌐</span>
-              <h4 style="margin:0; font-size:16px; color:var(--accent-cyan);">Netlify Canlı Yayın Entegrasyonu (bloxytubeofficial.netlify.app)</h4>
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:22px;">🐙</span>
+                <div>
+                  <h4 style="margin:0; font-size:16px; color:var(--accent-cyan);">GitHub'da Otomatik Depo Oluştur & Projeyi Yükle</h4>
+                  <p style="margin:2px 0 0; font-size:12px; color:var(--text-muted);">
+                    Git komutlarıyla uğraşmadan, GitHub hesabınızda anında repo açıp tüm dosyaları push edin.
+                  </p>
+                </div>
+              </div>
+              <span class="badge-appwrite-pill">Otomatik Git Sync</span>
             </div>
-            <p style="font-size:13px; color:var(--text-muted); margin:8px 0 14px;">
-              Projeniz Netlify için tam uyumlu olarak yapılandırılmıştır (<code>netlify.toml</code> hazır).
-            </p>
-            <div style="background:var(--bg-card); padding:14px; border-radius:10px; border:1px solid var(--border-color); font-size:13px; line-height:1.6;">
-              <strong>Netlify'a Nasıl Yüklenir? (3 Adımda Canlıya Alın):</strong>
-              <ol style="margin:8px 0 0 20px; padding:0;">
-                <li><strong>1. Adım:</strong> Netlify (app.netlify.com) hesabınıza giriş yapın ve <em>"Add new site" &gt; "Deploy manually"</em> seçeneğini açın.</li>
-                <li><strong>2. Adım:</strong> Bu projedeki <code>dist</code> klasörünü doğrudan Netlify sürükle-bırak alanına bırakın (veya GitHub reponuzu bağlayıp Build Command: <code>npm run build</code>, Publish Directory: <code>dist</code> yapın).</li>
-                <li><strong>3. Adım:</strong> Site ayarlarından Site Name kısmını <code>bloxytubeofficial</code> olarak belirleyin. Siteniz anında <code>https://bloxytubeofficial.netlify.app</code> üzerinde yayına girer!</li>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-top:14px;">
+              <div class="form-group">
+                <label for="admin-github-token">GitHub Personal Access Token (PAT)</label>
+                <input type="password" id="admin-github-token" class="input-field" placeholder="ghp_..." autocomplete="off" />
+                <span class="form-hint">
+                  <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank" rel="noopener" style="color:var(--accent-cyan); text-decoration:underline;">GitHub Token Oluştur (repo seçili)</a>
+                </span>
+              </div>
+              <div class="form-group">
+                <label for="admin-github-reponame">Depo (Repo) Adı</label>
+                <input type="text" id="admin-github-reponame" class="input-field" value="bloxytube" placeholder="bloxytube" />
+                <span class="form-hint">GitHub profilinizde açılacak depo adı.</span>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:12px;">
+              <button id="admin-github-push-btn" class="btn btn-primary" type="button" style="background:#238636; border-color:#2ea043;">
+                <span>🚀 GitHub'da Repo Aç ve Projeyi Otomatik Yükle</span>
+              </button>
+              <span id="github-push-status" style="font-size:13px; font-weight:600; color:var(--accent-cyan); display:none;"></span>
+            </div>
+
+            <div id="github-result-box" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:var(--bg-card); border:1px solid rgba(46, 160, 67, 0.4);">
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <div>
+                  <span style="font-size:13px; color:#2ea043; font-weight:700;">✓ Deponuz Hazır:</span>
+                  <a id="github-repo-link" href="#" target="_blank" rel="noopener" style="color:var(--accent-cyan); text-decoration:underline; font-weight:600; margin-left:6px;"></a>
+                </div>
+                <a id="github-netlify-deploy-link" href="#" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="background:var(--accent-orange); border-color:var(--accent-orange);">
+                  <span>🌐 Netlify'a Tek Tıkla Bağla</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Netlify Drop (GitHub'a Gerek Kalmadan 3 Saniyede Canlıya Alma) -->
+          <div class="settings-card" style="margin-top:16px; border:1px solid rgba(255, 102, 0, 0.3); background:rgba(255, 102, 0, 0.04);">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:22px;">⚡</span>
+              <div>
+                <h4 style="margin:0; font-size:16px; color:var(--accent-orange);">Netlify Drop: GitHub'sız 3 Saniyede Canlıya Al</h4>
+                <p style="margin:2px 0 0; font-size:12px; color:var(--text-muted);">
+                  Tek tıkla hazır paketi indirin ve Netlify Drop sayfasına sürükleyip bırakın!
+                </p>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:14px;">
+              <a href="/api/export/dist-zip" class="btn btn-primary" download="bloxytube-netlify-dist.zip" style="background:var(--accent-orange); border-color:var(--accent-orange); text-decoration:none;">
+                <span>📦 Netlify Hazır Paketi İndir (.zip)</span>
+              </a>
+              <a href="/api/export/source-zip" class="btn btn-outline" download="bloxytube-github-source.zip" style="text-decoration:none;">
+                <span>💻 Tüm Kaynak Kodlarını İndir (.zip)</span>
+              </a>
+              <a href="https://app.netlify.com/drop" target="_blank" rel="noopener" class="btn btn-ghost" style="border:1px dashed var(--border-color); text-decoration:none;">
+                <span>🌐 Netlify Drop Sayfasını Aç ↗</span>
+              </a>
+            </div>
+
+            <div style="background:var(--bg-card); padding:12px 14px; border-radius:8px; border:1px solid var(--border-color); font-size:13px; line-height:1.6; margin-top:14px;">
+              <strong>Hızlı Kurulum (bloxytubeofficial.netlify.app):</strong>
+              <ol style="margin:6px 0 0 18px; padding:0;">
+                <li>Yukarıdaki <strong>"Netlify Hazır Paketi İndir"</strong> butonuna basın (48 KB zip iner).</li>
+                <li><a href="https://app.netlify.com/drop" target="_blank" rel="noopener" style="color:var(--accent-orange); text-decoration:underline;">app.netlify.com/drop</a> sayfasına inen zip dosyasını sürükleyip bırakın.</li>
+                <li>Site Ayarlarından site adını <code>bloxytubeofficial</code> yapın. Siteniz <strong>https://bloxytubeofficial.netlify.app</strong> olarak anında yayında!</li>
               </ol>
             </div>
           </div>

@@ -5,6 +5,8 @@ import { db } from './src/db/index.ts';
 import { users, posts, messages, musicTracks } from './src/db/schema.ts';
 import { eq, desc, or, and } from 'drizzle-orm';
 import { Client as NodeAppwriteClient, Databases as NodeAppwriteDatabases, Storage as NodeAppwriteStorage } from 'node-appwrite';
+import fs from 'fs';
+import { execSync } from 'child_process';
 
 const app = express();
 const port = 3000;
@@ -745,6 +747,130 @@ app.post('/api/appwrite/bootstrap', verifyAdminAuth, async (req, res) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Bootstrap hatası' });
+  }
+});
+
+// -------------------------------------------------------------
+// 7. GITHUB VE NETLIFY OTOMATİK DIŞA AKTARMA & REPO OLUŞTURMA
+// -------------------------------------------------------------
+app.get('/api/export/dist-zip', (_req, res) => {
+  try {
+    const distPath = path.resolve('.', 'dist');
+    if (!fs.existsSync(distPath)) {
+      execSync('npm run build', { cwd: path.resolve('.') });
+    }
+    const zipPath = path.resolve('.', 'dist.zip');
+    execSync(`python3 -c "import zipfile, os; z=zipfile.ZipFile('${zipPath}', 'w', zipfile.ZIP_DEFLATED); [z.write(os.path.join(r, f), os.path.relpath(os.path.join(r, f), 'dist')) for r, d, files in os.walk('dist') for f in files]; z.close()"`, { cwd: path.resolve('.') });
+    
+    res.setHeader('Content-Disposition', 'attachment; filename="bloxytube-netlify-dist.zip"');
+    res.setHeader('Content-Type', 'application/zip');
+    const stream = fs.createReadStream(zipPath);
+    stream.pipe(res);
+  } catch (err: any) {
+    console.error('dist-zip error:', err);
+    res.status(500).json({ error: 'Netlify ZIP paketi hazırlanamadı: ' + err.message });
+  }
+});
+
+app.get('/api/export/source-zip', (_req, res) => {
+  try {
+    const zipPath = path.resolve('.', 'bloxytube-source.zip');
+    execSync(`python3 -c "import zipfile, os; z=zipfile.ZipFile('${zipPath}', 'w', zipfile.ZIP_DEFLATED); [z.write(os.path.join(r, f), os.path.relpath(os.path.join(r, f), '.')) for r, d, files in os.walk('.') if not any(p in r for p in ['node_modules', '.git', '.aistudio', '__pycache__']) for f in files if f not in ['dist.zip', 'bloxytube-source.zip']]; z.close()"`, { cwd: path.resolve('.') });
+
+    res.setHeader('Content-Disposition', 'attachment; filename="bloxytube-github-source.zip"');
+    res.setHeader('Content-Type', 'application/zip');
+    const stream = fs.createReadStream(zipPath);
+    stream.pipe(res);
+  } catch (err: any) {
+    console.error('source-zip error:', err);
+    res.status(500).json({ error: 'Kaynak kodu ZIP paketi hazırlanamadı: ' + err.message });
+  }
+});
+
+app.post('/api/github/create-and-push', async (req, res) => {
+  try {
+    const { token, repoName = 'bloxytube', isPrivate = false } = req.body;
+    const cleanToken = String(token || '').trim();
+
+    if (!cleanToken) {
+      return res.status(400).json({ error: 'Lütfen geçerli bir GitHub Personal Access Token (PAT) girin.' });
+    }
+
+    // 1. GitHub Kullanıcı Bilgisini Doğrula
+    const userRes = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `Bearer ${cleanToken}`,
+        'User-Agent': 'BloxyTube-Deployer',
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    if (!userRes.ok) {
+      return res.status(401).json({ error: 'GitHub Token geçersiz veya yetkisiz. Lütfen repo izinlerine sahip bir Personal Access Token (PAT) girin.' });
+    }
+
+    const userData = await userRes.json();
+    const githubUsername = userData.login;
+    const cleanRepoName = String(repoName || 'bloxytube').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+
+    // 2. GitHub üzerinde repository oluştur (varsa hata vermeden devam et)
+    const createRepoRes = await fetch('https://api.github.com/user/repos', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${cleanToken}`,
+        'User-Agent': 'BloxyTube-Deployer',
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: cleanRepoName,
+        description: 'BloxyTube - Appwrite & Netlify Ready Video & Social Platform by BloxyCola',
+        private: Boolean(isPrivate),
+        auto_init: false
+      })
+    });
+
+    if (!createRepoRes.ok && createRepoRes.status !== 422) {
+      const errText = await createRepoRes.text();
+      return res.status(createRepoRes.status).json({ error: `GitHub Repo oluşturulamadı: ${errText}` });
+    }
+
+    // 3. Git uzaktan deposunu ayarla ve projeyi push et
+    const cwd = path.resolve('.');
+    execSync('git config --global --add safe.directory /app/applet || true', { cwd });
+    execSync('git add .', { cwd });
+    try {
+      execSync('git commit -m "feat: sync BloxyTube to GitHub with Appwrite and Netlify config"', { cwd });
+    } catch {
+      // Değişiklik yoksa pass
+    }
+
+    const authRemoteUrl = `https://${githubUsername}:${cleanToken}@github.com/${githubUsername}/${cleanRepoName}.git`;
+    
+    try {
+      execSync('git remote remove origin', { cwd });
+    } catch {
+      // remote yoksa devam et
+    }
+
+    execSync(`git remote add origin ${authRemoteUrl}`, { cwd });
+    execSync('git branch -M main', { cwd });
+    execSync('git push -u origin main --force', { cwd });
+
+    const publicRepoUrl = `https://github.com/${githubUsername}/${cleanRepoName}`;
+    const netlifyDeployUrl = `https://app.netlify.com/start/deploy?repository=${publicRepoUrl}`;
+
+    res.json({
+      success: true,
+      githubUsername,
+      repoName: cleanRepoName,
+      repoUrl: publicRepoUrl,
+      netlifyDeployUrl,
+      message: `Tebrikler! ${publicRepoUrl} deposu başarıyla oluşturuldu ve tüm proje kodları push edildi!`
+    });
+  } catch (err: any) {
+    console.error('GitHub push error:', err);
+    res.status(500).json({ error: 'GitHub yükleme işlemi başarısız: ' + (err.message || err) });
   }
 });
 

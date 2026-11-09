@@ -3342,6 +3342,71 @@ function initAdminPanelController() {
       showToast("Tüm veriler başarıyla eşitlendi!", "success");
     });
   }
+
+  // GitHub Otomatik Repo Oluşturma & Projeyi Yükleme
+  const adminGithubPushBtn = document.getElementById("admin-github-push-btn");
+  if (adminGithubPushBtn) {
+    adminGithubPushBtn.addEventListener("click", async () => {
+      const token = document.getElementById("admin-github-token")?.value?.trim();
+      const repoName = document.getElementById("admin-github-reponame")?.value?.trim() || "bloxytube";
+      const statusEl = document.getElementById("github-push-status");
+      const resultBox = document.getElementById("github-result-box");
+      const repoLink = document.getElementById("github-repo-link");
+      const netlifyLink = document.getElementById("github-netlify-deploy-link");
+
+      if (!token) {
+        showToast("Lütfen GitHub Personal Access Token girin! (repo izinli)", "warning");
+        document.getElementById("admin-github-token")?.focus();
+        return;
+      }
+
+      adminGithubPushBtn.disabled = true;
+      adminGithubPushBtn.innerHTML = `<span>⏳ Repo Oluşturuluyor & Yükleniyor...</span>`;
+      if (statusEl) {
+        statusEl.style.display = "inline";
+        statusEl.textContent = "GitHub'a bağlanılıyor ve dosyalar yükleniyor...";
+      }
+
+      try {
+        const res = await fetch("/api/github/create-and-push", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-key": ADMIN_SECRET_KEY
+          },
+          body: JSON.stringify({ token, repoName, isPrivate: false })
+        });
+
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "GitHub işlemi başarısız.");
+        }
+
+        if (resultBox && repoLink && netlifyLink) {
+          resultBox.style.display = "block";
+          repoLink.href = data.repoUrl;
+          repoLink.textContent = data.repoUrl;
+          netlifyLink.href = data.netlifyDeployUrl;
+        }
+
+        if (statusEl) {
+          statusEl.textContent = "✓ Tamamlandı!";
+          statusEl.style.color = "#2ea043";
+        }
+        showToast(`🎉 GitHub reposu açıldı: ${data.repoUrl}`, "success");
+      } catch (err) {
+        console.error("GitHub push error:", err);
+        showToast(err.message || "GitHub yükleme hatası", "error");
+        if (statusEl) {
+          statusEl.textContent = "✕ " + (err.message || "Hata oluştu");
+          statusEl.style.color = "var(--accent-rose)";
+        }
+      } finally {
+        adminGithubPushBtn.disabled = false;
+        adminGithubPushBtn.innerHTML = `<span>🚀 GitHub'da Repo Aç ve Projeyi Otomatik Yükle</span>`;
+      }
+    });
+  }
 }
 
 async function loadAdminDashboardData() {
