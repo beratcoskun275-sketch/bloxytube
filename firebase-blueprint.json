@@ -1,0 +1,206 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered user profile with custom authentication details.",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Unique username (Roblox-style without email).",
+          "minLength": 3,
+          "maxLength": 30
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user.",
+          "maxLength": 50
+        },
+        "passwordHash": {
+          "type": "string",
+          "description": "SHA-256 hashed password string."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Profile avatar image URL."
+        },
+        "bio": {
+          "type": "string",
+          "description": "User biography.",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp when the account was registered."
+        },
+        "customTag": {
+          "type": "string",
+          "description": "Custom administrator-assigned badge tag label (e.g. Yönetici, Ünlü)."
+        },
+        "customTagColor": {
+          "type": "string",
+          "description": "Hex color code for the custom badge."
+        },
+        "botFollowersCount": {
+          "type": "number",
+          "description": "Number of bot followers added by the administrator."
+        }
+      },
+      "required": ["username", "displayName", "passwordHash", "createdAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "User published post, photo, or video.",
+      "type": "object",
+      "properties": {
+        "authorId": {
+          "type": "string",
+          "description": "ID of the user who authored the post."
+        },
+        "authorUsername": {
+          "type": "string",
+          "description": "Username of the author."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Display name of the author."
+        },
+        "authorAvatar": {
+          "type": "string",
+          "description": "Avatar URL of the author."
+        },
+        "content": {
+          "type": "string",
+          "description": "Text content of the post.",
+          "maxLength": 280
+        },
+        "mediaUrl": {
+          "type": "string",
+          "description": "URL of the attached image, video, or audio."
+        },
+        "mediaType": {
+          "type": "string",
+          "description": "Type of attached media (image, video, audio)."
+        },
+        "likes": {
+          "type": "array",
+          "description": "List of usernames who liked the post."
+        },
+        "reposts": {
+          "type": "number",
+          "description": "Count of reposts."
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Creation timestamp in milliseconds."
+        }
+      },
+      "required": ["authorUsername", "content", "timestamp"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Direct message between two users.",
+      "type": "object",
+      "properties": {
+        "sender": {
+          "type": "string",
+          "description": "Username of sender."
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Display name of sender."
+        },
+        "recipient": {
+          "type": "string",
+          "description": "Username of recipient."
+        },
+        "text": {
+          "type": "string",
+          "description": "Message content.",
+          "maxLength": 1000
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Creation timestamp."
+        }
+      },
+      "required": ["sender", "recipient", "text", "timestamp"]
+    },
+    "MusicTrack": {
+      "title": "MusicTrack",
+      "description": "Uploaded community music track.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Track title.",
+          "maxLength": 100
+        },
+        "artist": {
+          "type": "string",
+          "description": "Artist or band name.",
+          "maxLength": 100
+        },
+        "uploader": {
+          "type": "string",
+          "description": "Username of uploader."
+        },
+        "url": {
+          "type": "string",
+          "description": "Audio URL or storage link."
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Upload timestamp."
+        }
+      },
+      "required": ["title", "artist", "url", "timestamp"]
+    },
+    "Score": {
+      "title": "Score",
+      "description": "Arcade game record.",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Username of the player."
+        },
+        "game": {
+          "type": "string",
+          "description": "Game identifier (snake, xox)."
+        },
+        "score": {
+          "type": "number",
+          "description": "Achieved score."
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Timestamp when the score was achieved."
+        }
+      },
+      "required": ["username", "game", "score", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Registered user accounts."
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Public social posts feed."
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Direct messages between users."
+    },
+    "/music/{trackId}": {
+      "schema": { "$ref": "#/entities/MusicTrack" },
+      "description": "Community music track library."
+    },
+    "/scores/{scoreId}": {
+      "schema": { "$ref": "#/entities/Score" },
+      "description": "Arcade mini-game high scores."
+    }
+  }
+}

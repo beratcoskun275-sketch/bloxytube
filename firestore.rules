@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Kullanıcı Profilleri
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if request.resource.data.username is string 
+                    && request.resource.data.passwordHash is string;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // 2. Sosyal Akış Gönderileri (Posts)
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if request.resource.data.authorUsername is string 
+                    && request.resource.data.content is string;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // 3. Anlık Mesajlar (Messages)
+    match /messages/{messageId} {
+      allow read: if true;
+      allow create: if request.resource.data.sender is string 
+                    && request.resource.data.recipient is string
+                    && request.resource.data.text is string;
+      allow update, delete: if true;
+    }
+
+    // 4. Müzik Odası (Music)
+    match /music/{trackId} {
+      allow read: if true;
+      allow create: if request.resource.data.title is string 
+                    && request.resource.data.url is string;
+      allow update, delete: if true;
+    }
+
+    // 5. Oyun Skorları (Scores)
+    match /scores/{scoreId} {
+      allow read: if true;
+      allow create: if request.resource.data.username is string 
+                    && request.resource.data.game is string;
+      allow update, delete: if true;
+    }
+  }
+}
